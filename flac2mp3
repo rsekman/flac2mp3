@@ -1,0 +1,53 @@
+#!/usr/bin/sh
+
+readarray -t tags < <(metaflac --export-tags-to=- "$1" \
+	 | sed -n \
+		-e 's/^ALBUM=/TALB=/p' \
+		-e 's/^ALBUMARTIST=/TPE2=/p' \
+		-e 's/^ARTIST=/TPE1=/p' \
+		-e 's/^BAND=/TPE2=/p' \
+		-e 's/^BPM=/TBPM=/p' \
+		-e 's/^COMMENT=/COMM=/p' \
+		-e 's/^COMPILATION=/TCMP=/p' \
+		-e 's/^COMPOSER=/TCOM=/p' \
+		-e 's/^CONDUCTOR=/TPE3=/p' \
+		-e 's/^DATE=/TYER=/p' \
+		-e 's/^YEAR=/TYER=/p' \
+		-e 's/^DISCNUMBER=/TPOS=/p' \
+		-e 's/^GENRE=/TCON=/p' \
+		-e 's/^ISRC=/TSRC=/p' \
+		-e 's/^LYRICIST=/TEXT=/p' \
+		-e 's/^PUBLISHER=/TPUB=/p' \
+		-e 's/^TITLE=/TIT2=/p' \
+		-e 's/^TRACKNUMBER=/TRCK=/p' \
+		-e 's/^MUSICBRAINZ_TRACKID=/UFID=/p' \
+		-e 's/^PIC=/APIC=/p' \
+	| sed \
+		-e 's/^MD5=/TXXX=MD5=/p' \
+		-e 's/^MUSICBRAINZ_ARTISTID=/TXXX=MusicBrainz Artist Id=/p' \
+		-e 's/^MUSICBRAINZ_ALBUMID=/TXXX=MusicBrainz Album Id=/p' \
+		-e 's/^MUSICBRAINZ_ALBUMSTATUS=/TXXX=MusicBrainz Album Status=/p' \
+		-e 's/^MUSICBRAINZ_ALBUMTYPE=/TXXX=MusicBrainz Album Type=/p' \
+		-e 's/^MUSICBRAINZ_TRMID=/TXXX=MusicBrainz Track Id=/p' \
+		-e 's/^MUSICBRAINZ_SORTNAME=/TXXX==/p' \
+		-e 's/^REPLAYGAIN_TRACK_PEAK=/TXXX=Peak track amplitude=/p' \
+		-e 's/^REPLAYGAIN_TRACK_GAIN=/TXXX=Track replay gain=/p' \
+		-e 's/^REPLAYGAIN_ALBUM_PEAK=/TXXX=Peak album amplitude=/p' \
+		-e 's/^REPLAYGAIN_ALBUM_GAIN=/TXXX=Album replay gain=/p' \
+)
+
+tagflags=()
+for t in "${tags[@]}"; do
+	tagflags+=("--tv")
+	tagflags+=("$t")
+done
+
+#default options
+if [ ! ${!FLACOPTS[@]} ] ; then
+    FLACOPTS="-s"
+fi
+if [ ! ${!LAMEOPTS[@]} ] ; then
+    LAMEOPTS="--vbr-new -V 0 --quiet"
+fi
+
+flac ${FLACOPTS} -dc "$1" | lame ${LAMEOPTS} "${tagflags[@]}" - $2
